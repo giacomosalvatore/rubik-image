@@ -19,38 +19,75 @@ fileSelector.onchange = () => {
 image.onload = () => {
 
     // sets up the canvas with a preset width
-    var canvas = document.createElement('canvas');
-    var context = canvas.getContext('2d');
-    let width = 150;
+    var originalCanvas = document.createElement('canvas');
+    var original = originalCanvas.getContext('2d');
+    let width = 90;
     // computes the height in proportion to the width
     let height = Math.floor(width / image.width * image.height);
-    canvas.width = width;
-    canvas.height = height;
+    originalCanvas.width = width;
+    originalCanvas.height = height;
     // draw the image on the canvas
-    context.drawImage(image, 0, 0, width, height);
+    original.drawImage(image, 0, 0, width, height);
 
-    var textBox = document.getElementById("text-image");
-    textBox.innerHTML = "";
+    var rubikCanvas = document.getElementById("rubik");
+    rubikCanvas.width = width * 4;
+    rubikCanvas.height = height * 4;
+    var rubik = rubikCanvas.getContext("2d");
 
-    const greyScale = "@#%*+=:-..";
-    var textImage = "";
-    for(let i = 0; i < canvas.height; i++){
-        for(let j = 0; j < canvas.width; j++){
+    const colors = [
+        [0, 0, 255],    // blue
+        [255, 0, 0],    // red
+        [255, 128, 0],  // orange
+        [0, 255, 0],    // green
+        [255, 255, 0],  // yellow
+        [255, 255, 255],    // white
+        []
+    ];
+    // checks the lowest and highest brightness;
+    let bright = {
+        min: 255,
+        max: 0,
+    }
+    for(let i = 0; i < originalCanvas.height; i++) {
+        for(let j = 0; j < originalCanvas.width; j++) {
+            let px = original.getImageData(j,i,1,1).data;
             // averages the rgb values to get the total brightness of the pixel
             let brightness = 0;
-            let px = context.getImageData(j,i,1,1).data;
             for(let k = 1; k < px.length; k++){
                 brightness += px[k];
             }
-            // selects the character in proportion to the brightness
-            let index = Math.floor( brightness / (255 * 3) * (greyScale.length - 1));
-            textImage += greyScale.charAt(index);
+            brightness /= 3;
+            if(brightness < bright.min){
+                bright.min = brightness;
+            }
+            if(brightness > bright.max){
+                bright.max = brightness;
+            }
         }
-        
-        textBox.innerText += textImage;
-        textBox.appendChild(document.createElement("br"));
+    }
 
-        textImage = "";
+
+    for(let i = 0; i < originalCanvas.height; i++){
+        for(let j = 0; j < originalCanvas.width; j++){
+
+            let px = original.getImageData(j,i,1,1).data;
+
+            // averages the rgb values to get the total brightness of the pixel
+            let brightness = 0;
+            for(let k = 1; k < px.length; k++){
+                brightness += px[k];
+            }
+            brightness /= 3;
+            // selects the color in proportion to the brightness
+            let index = Math.floor( (brightness - bright.min) / (bright.max - bright.min) * (colors.length - 1));
+            let closestColor = colors[index];
+
+
+            // fills the pixel with the closest color
+            rubik.fillStyle = 'rgb(' + closestColor[0] + ',' + closestColor[1] + ',' + closestColor[2] + ')';
+            rubik.fillRect(j*4,i*4,4,4);
+
+        }
     }
 
 }
